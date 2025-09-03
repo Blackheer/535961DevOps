@@ -1,3 +1,4 @@
+# Updated workflow for Docker Hub deployment
 name: CI/CD
 
 on: push
