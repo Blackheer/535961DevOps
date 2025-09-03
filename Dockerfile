@@ -21,7 +21,7 @@ RUN /root/.local/bin/poetry install --no-interaction --no-ansi --no-root
 COPY /content/. /app/
 
 # Expose webserver port
-# EXPOSE 5000
+EXPOSE 5000
 
 # Run the webserver
-CMD ["/root/.local/bin/poetry", "run", "flask", "run", "-h", "0.0.0.0"]
+CMD ["/root/.local/bin/poetry", "run", "flask", "run", "-h", "0.0.0.0", "-p", "5000"]
