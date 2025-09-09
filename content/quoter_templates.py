@@ -41,7 +41,7 @@ def comments_page(quote,comments,user_id):
 """
   
     content = f"""
-<main>
+<main>er
   {quote_fragment(quote['id'], quote['text'], quote['attribution'])}
   {''.join([comment_fragment(c['text'], c['user_name'], c['time']) for c in comments])}
   {post_html}
@@ -60,7 +60,7 @@ def page(content,user_id,title,error=None):
 """
     else:
         links = f"""
-<label class="link" for="signinCheckbox">Inloggen</label>
+<label class="link" for="signinCheckbox">Inloggenhier van henk</label>
 """
 
     return f"""<!DOCTYPE html>
