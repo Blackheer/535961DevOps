@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends pipx \
 RUN /usr/bin/pipx install poetry
 
 # Copy only requirements to cache them in docker layer
-COPY /content/pyproject.toml /content/poetry.lock /app/
+COPY /content/pyproject.toml /app/
 
-# Project initialization
-RUN /root/.local/bin/poetry install --no-interaction --no-ansi --no-root
+# Project initialization - generate lock file and install
+RUN /root/.local/bin/poetry lock --no-update && /root/.local/bin/poetry install --no-interaction --no-ansi --no-root
 
 # Copying the project files into the container
 COPY /content/. /app/

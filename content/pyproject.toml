@@ -8,9 +8,8 @@ authors = ["Saxion"]
 python = "^3.11"
 flask = "^2.2.5"
 markupsafe = ">=2.1.1"
-# Fixed vulnerable packages - now using secure versions
-jinja2 = "^3.1.0"  # Updated to secure version
-requests = "^2.28.0"  # Updated to secure version
+# Requests added for demonstration - Flask already brings Jinja2
+requests = "^2.28.0"
 
 [tool.poetry.dev-dependencies]
 
