@@ -8,6 +8,9 @@ authors = ["Saxion"]
 python = "^3.11"
 flask = "^2.2.5"
 markupsafe = ">=2.1.1"
+# Adding vulnerable package for Docker Scout demonstration
+jinja2 = "2.10.1"  # This version has known critical vulnerabilities
+requests = "2.20.0"  # This version has known vulnerabilities
 
 [tool.poetry.dev-dependencies]
 
