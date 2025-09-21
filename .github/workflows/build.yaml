@@ -36,7 +36,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Docker Scout CVEs
-        uses: docker/scout-action@v1.0
+        uses: docker/scout-action@v1
         with:
           command: cves
           image: apenzijngek/student535961-app:latest
