@@ -46,7 +46,7 @@ jobs:
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           exit-code: false
-          exit-on: none
+          exit-on: false
 
   test:
     name: Test
