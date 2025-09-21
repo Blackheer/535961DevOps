@@ -1,22 +1,31 @@
+import html
+
 def quote_fragment(id, text, attribution):
+    # Escape HTML to prevent XSS attacks
+    escaped_text = html.escape(text)
+    escaped_attribution = html.escape(attribution)
     return f"""
 <a href="/quotes/{id}" class="quote img{id % 13}">
-  <q>{text}</q>
-  <address>{attribution}</address>
+  <q>{escaped_text}</q>
+  <address>{escaped_attribution}</address>
 </a>
 """
 
 
 
 def comment_fragment(text,user_name,time):
-  time_html = f"<time>{time}</time>" if time else ""
+  # Escape HTML to prevent XSS attacks
+  escaped_text = html.escape(text)
+  escaped_user_name = html.escape(user_name) if user_name else ""
+  escaped_time = html.escape(time) if time else ""
+  time_html = f"<time>{escaped_time}</time>" if time else ""
   return f"""
 <section class="comment">
   <aside>
-    <address>{user_name}</address>
+    <address>{escaped_user_name}</address>
 {time_html}
   </aside>
-  <p>{text}</p>
+  <p>{escaped_text}</p>
 </section>
 """
 
@@ -52,6 +61,9 @@ def comments_page(quote,comments,user_id):
 
 
 def page(content,user_id,title,error=None):
+    # Escape title and error to prevent XSS
+    escaped_title = html.escape(title) if title else "Quoter XP 2"
+    escaped_error = html.escape(error) if error else ""
 
     if user_id:
         links = f"""
@@ -66,7 +78,7 @@ def page(content,user_id,title,error=None):
     return f"""<!DOCTYPE html>
 <html lang="en-US">
 <head>
-  <title>{title or "Quoter XP 2"}</title>
+  <title>{escaped_title}</title>
   <meta charset="utf-8">
   <link rel="stylesheet" type="text/css" href="/static/style.css">
 </head>
@@ -97,7 +109,7 @@ def page(content,user_id,title,error=None):
 <div class="modal">
   <form action="/signin" method="post">
     <p class="warn">WARNING!!: This site is intentionally insecure. Do not use passwords you may be using on other services.</p>
-    {f"<div class=error>{error}</div>" if error else ""}
+    {f"<div class=error>{escaped_error}</div>" if error else ""}
     <h3>Username</h3>
     <input type="text" name="username">
     <h3>Password</h3>

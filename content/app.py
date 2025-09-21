@@ -48,24 +48,57 @@ def get_comments_page(quote_id):
 # Post a new quote
 @app.route("/quotes", methods=["POST"])
 def post_quote():
+    # Basic input validation
+    text = request.form.get('text', '').strip()
+    attribution = request.form.get('attribution', '').strip()
+    
+    if not text or not attribution:
+        return redirect("/?error=" + urllib.parse.quote("Both quote text and attribution are required!"))
+    
+    if len(text) > 1000 or len(attribution) > 200:
+        return redirect("/?error=" + urllib.parse.quote("Quote or attribution is too long!"))
+    
     with db:
-        db.execute("insert into quotes(text,attribution) values(?, ?)", (request.form['text'], request.form['attribution']))
+        db.execute("insert into quotes(text,attribution) values(?, ?)", (text, attribution))
     return redirect("/#bottom")
 
 
 # Post a new comment
 @app.route("/quotes/<int:quote_id>/comments", methods=["POST"])
 def post_comment(quote_id):
+    if not request.user_id:
+        return redirect("/")  # Redirect if not logged in
+    
+    # Basic input validation
+    text = request.form.get('text', '').strip()
+    
+    if not text:
+        return redirect(f"/quotes/{quote_id}")
+    
+    if len(text) > 1000:
+        return redirect(f"/quotes/{quote_id}")
+    
     with db:
-        db.execute("insert into comments(text,quote_id,user_id) values(?, ?, ?)", (request.form['text'], quote_id, request.user_id))
+        db.execute("insert into comments(text,quote_id,user_id) values(?, ?, ?)", (text, quote_id, request.user_id))
     return redirect(f"/quotes/{quote_id}#bottom")
 
 
 # Sign in user
 @app.route("/signin", methods=["POST"])
 def signin():
-    username = request.form["username"].lower()
-    password = request.form["password"]
+    username = request.form.get("username", "").lower().strip()
+    password = request.form.get("password", "")
+    
+    # Basic input validation
+    if not username or not password:
+        return redirect('/?error='+urllib.parse.quote("Username and password are required!"))
+    
+    if len(username) > 50 or len(password) > 200:
+        return redirect('/?error='+urllib.parse.quote("Username or password is too long!"))
+    
+    # Prevent simple username injection attempts
+    if any(char in username for char in ['<', '>', '"', "'"]):
+        return redirect('/?error='+urllib.parse.quote("Invalid username format!"))
 
     user = db.execute("select id, password from users where name=?", (username,)).fetchone()
     if user: # user exists
@@ -80,7 +113,8 @@ def signin():
             user_id = cursor.lastrowid
 
     response = make_response(redirect('/'))
-    response.set_cookie('user_id', str(user_id))
+    # Set secure cookie flags to prevent session hijacking
+    response.set_cookie('user_id', str(user_id), httponly=True, secure=False, samesite='Lax')
     return response
 
 
@@ -88,5 +122,6 @@ def signin():
 @app.route("/signout", methods=["GET"])
 def signout():
     response = make_response(redirect('/'))
-    response.delete_cookie('user_id')
+    # Properly delete the cookie with same flags as when it was set
+    response.delete_cookie('user_id', httponly=True, samesite='Lax')
     return response
