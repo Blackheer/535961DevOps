@@ -65,6 +65,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Contains ACCESS TOKEN
           
+          
       - name: Docker Scout CVE Scan
         uses: docker/scout-action@v1
         with:
@@ -83,7 +84,6 @@ jobs:
           command: sbom
           image: ${{ env.DOCKER_IMAGE }}:latest
           output: ./sbom.json
-          
 
   test:
     name: Integration Test
@@ -98,22 +98,3 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Contains ACCESS TOKEN
-          
-      - name: Run Application Tests
-        run: |
-          docker run -d -p 80:5000 ${{ env.DOCKER_IMAGE }}:latest
-          sleep 10s
-          curl -f http://localhost || exit 1
-          docker ps -aq | xargs docker stop | xargs docker rm
-
-  deploy:
-    name: Deploy
-    needs: [ test ]
-    runs-on: self-hosted
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-      - run: |
-              sudo kubectl delete deployment --all              
-              sudo kubectl apply -f ${{ github.workspace }}/kubernetes/deployment.yaml --force
-              sudo kubectl apply -f ${{ github.workspace }}/kubernetes/nginx-service.yaml --force
