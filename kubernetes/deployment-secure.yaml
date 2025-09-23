@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-devsecops-secure
+  labels:
+    app: quoterxp
+    security: enhanced
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: quoterxp
+  template:
+    metadata:
+      labels:
+        app: quoterxp
+        security: token-auth
+    spec:
+      containers:
+      - name: quoterxp
+        image: apenzijngek/student535961-app:latest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 5000
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+      # Updated to use token-based authentication
+      imagePullSecrets:
+        - name: dockerhub-token-secret
+        - name: harbor-registry-secret  # Fallback to Harbor if available
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 1000

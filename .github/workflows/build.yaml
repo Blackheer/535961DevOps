@@ -1,45 +1,75 @@
-# Updated workflow for Docker Hub deployment - retry run with Docker Scout
-name: CI/CD
+# Updated workflow with Docker Hub Token Authentication & Harbor Registry
+name: CI/CD Pipeline with Enhanced Security
 on: push
+
+env:
+  DOCKER_IMAGE: apenzijngek/student535961-app
+  HARBOR_REGISTRY: harbor.local:30443
+  HARBOR_PROJECT: student535961
+
 jobs:
   build:
-    name: Build
+    name: Build & Push to Registries
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
-      - name: Login to Docker Hub
+        
+      # Docker Hub login with TOKEN (not password!)
+      - name: Login to Docker Hub (Token Auth)
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Contains ACCESS TOKEN
+          
+      # Harbor registry login (if available)
+      - name: Login to Harbor Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+        continue-on-error: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
-      - name: Build and push the Docker image
+      - name: Build and push to Docker Hub
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            apenzijngek/student535961-app:latest
+            ${{ env.DOCKER_IMAGE }}:latest
+            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            
+      - name: Build and push to Harbor (optional)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/quoter-app:latest
+            ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/quoter-app:${{ github.sha }}
+        continue-on-error: true
 
   scan:
-    name: Scan
+    name: Security Scan
     needs: [ build ]
     runs-on: ubuntu-latest
     steps:
-      - name: Login to Docker Hub
+      - name: Login to Docker Hub (Token Auth)
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-      - name: Docker Scout CVEs
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Contains ACCESS TOKEN
+          
+      - name: Docker Scout CVE Scan
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: apenzijngek/student535961-app:latest
+          image: ${{ env.DOCKER_IMAGE }}:latest
           only-fixed: true
           only-severities: critical,high
           ignore-base: false
@@ -47,24 +77,33 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           exit-code: never
           
+      - name: Generate SBOM
+        uses: docker/scout-action@v1
+        with:
+          command: sbom
+          image: ${{ env.DOCKER_IMAGE }}:latest
+          output: ./sbom.json
+          
 
   test:
-    name: Test
+    name: Integration Test
     needs: [ scan ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
-      - name: Login to Docker Hub
+        
+      - name: Login to Docker Hub (Token Auth)
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-      - name: test 
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Contains ACCESS TOKEN
+          
+      - name: Run Application Tests
         run: |
-          docker run -d -p 80:5000 apenzijngek/student535961-app:latest
+          docker run -d -p 80:5000 ${{ env.DOCKER_IMAGE }}:latest
           sleep 10s
-          curl http://localhost
+          curl -f http://localhost || exit 1
           docker ps -aq | xargs docker stop | xargs docker rm
 
   deploy:
