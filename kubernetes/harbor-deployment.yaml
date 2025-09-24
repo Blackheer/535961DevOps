@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: harbor
+  template:
+    metadata:
+      labels:
+        app: harbor
+    spec:
+      containers:
+      - name: harbor
+        image: goharbor/harbor-core:v2.8.0
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: CORE_SECRET
+          value: "your-core-secret"
+        - name: DATABASE_PASSWORD
+          value: "your-database-password"
+        volumeMounts:
+        - name: harbor-data
+          mountPath: /data
+      volumes:
+      - name: harbor-data
+        persistentVolumeClaim:
+          claimName: harbor-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: harbor-pvc
+  namespace: harbor
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: harbor-service
+  namespace: harbor
+spec:
+  selector:
+    app: harbor
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  - protocol: TCP
+    port: 443
+    targetPort: 443
+  type: ClusterIP
