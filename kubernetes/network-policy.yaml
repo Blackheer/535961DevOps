@@ -4,10 +4,11 @@ metadata:
   name: allow-port-5000
   namespace: default
 spec:
-  podSelector: {}  # Selecteert alle pods in de namespace
+  podSelector:
+    matchLabels: {}
   policyTypes:
-    - Ingress
+  - Ingress
   ingress:
-    - ports:
-        - protocol: TCP
-          port: 5000
+  - ports:
+    - protocol: TCP
+      port: 5000
