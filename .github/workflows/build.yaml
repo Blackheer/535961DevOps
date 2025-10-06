@@ -98,22 +98,28 @@ jobs:
 
   postman-security-test:
     name: Security Headers Test
-    needs: [ test ]  # Draait na de integration tests
+    needs: [ test ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
       
-      - name: Run Postman Security Tests
-        uses: postmanlabs/newman-action@v1
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
-          collection: ${{ secrets.POSTMAN_COLLECTION_ID }}
-          apiKey: ${{ secrets.POSTMAN_API_KEY }}
-        continue-on-error: true  # Pipeline blijft doorgaan ook als test faalt
+          node-version: '20'
+      
+      - name: Install Newman
+        run: npm install -g newman
+      
+      - name: Run Postman Collection
+        run: |
+          newman run "https://api.postman.com/collections/${{ secrets.POSTMAN_COLLECTION_ID }}?apikey=${{ secrets.POSTMAN_API_KEY }}"
+        continue-on-error: true
         
-      - name: Upload test results
+      - name: Upload Newman results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # v4 in plaats van v3
         with:
-          name: postman-test-results
+          name: newman-results
           path: newman/
