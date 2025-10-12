@@ -1,12 +1,10 @@
 # Updated workflow with Docker Hub Token Authentication & Harbor Registry
 name: CI/CD Pipeline with Enhanced Security
 on: push
-
 env:
   DOCKER_IMAGE: apenzijngek/student535961-app
   HARBOR_REGISTRY: harbor.local:30443
   HARBOR_PROJECT: student535961
-
 jobs:
   build:
     name: Build & Push to Registries
@@ -53,7 +51,7 @@ jobs:
             ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/quoter-app:latest
             ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/quoter-app:${{ github.sha }}
         continue-on-error: true
-
+        
   scan:
     name: Security Scan
     needs: [ build ]
@@ -64,7 +62,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Contains ACCESS TOKEN
-          
           
       - name: Docker Scout CVE Scan
         uses: docker/scout-action@v1
@@ -84,7 +81,7 @@ jobs:
           command: sbom
           image: ${{ env.DOCKER_IMAGE }}:latest
           output: ./sbom.json
-
+          
   test:
     name: Integration Test
     needs: [ scan ]
@@ -98,3 +95,31 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_LOGIN }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Contains ACCESS TOKEN
+
+  postman-security-test:
+    name: Security Headers Test
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Newman
+        run: npm install -g newman
+      
+      - name: Run Postman Collection
+        run: |
+          newman run "https://api.postman.com/collections/${{ secrets.POSTMAN_COLLECTION_ID }}?apikey=${{ secrets.POSTMAN_API_KEY }}"
+        continue-on-error: true
+        
+      - name: Upload Newman results
+        if: always()
+        uses: actions/upload-artifact@v4  # v4 in plaats van v3
+        with:
+          name: newman-results
+          path: newman/
